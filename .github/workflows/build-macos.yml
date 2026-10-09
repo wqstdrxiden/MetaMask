@@ -34,15 +34,12 @@ jobs:
           echo "Устанавливаем ffmpeg и exiftool через Homebrew..."
           brew install ffmpeg exiftool
           
-          # Копируем установленные бинарники в tools_mac
           mkdir -p tools_mac
           
-          # ffmpeg и ffprobe
           FFMPEG_PREFIX="$(brew --prefix ffmpeg)"
           cp "$FFMPEG_PREFIX/bin/ffmpeg" tools_mac/
           cp "$FFMPEG_PREFIX/bin/ffprobe" tools_mac/
           
-          # exiftool - ищем где он установился
           EXIFTOOL_PATH="$(which exiftool)"
           if [ -z "$EXIFTOOL_PATH" ]; then
             echo "ОШИБКА: exiftool не найден в PATH"
@@ -50,20 +47,16 @@ jobs:
           fi
           cp "$EXIFTOOL_PATH" tools_mac/
           
-          echo "Проверяем бинарники..."
           ls -lh tools_mac/
           
-          # Создаём структуру для prep_tools_mac.sh
-          # exiftool уже готовый бинарник, exiftool_src не нужен
           mkdir -p exiftool_src
           touch exiftool_src/.placeholder
 
       - name: Prepare tools_mac.zip
         run: |
-          chmod +x prep_tools_mac.sh build_mac.sh
+          chmod +x build_mac.sh
           
-          # Упрощённая версия prep_tools_mac.sh - просто пакуем готовые бинарники
-          cat > prep_tools_mac_simple.sh <<'EOF'
+          cat > prep_tools_simple.sh <<'PREP_SCRIPT'
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -75,7 +68,6 @@ cd "$(dirname "$0")"
 chmod +x tools_mac/ffmpeg tools_mac/ffprobe tools_mac/exiftool
 chmod -R +r tools_mac
 
-# ad-hoc подпись
 codesign --force --sign - tools_mac/ffmpeg  || true
 codesign --force --sign - tools_mac/ffprobe || true
 codesign --force --sign - tools_mac/exiftool || true
@@ -83,10 +75,10 @@ codesign --force --sign - tools_mac/exiftool || true
 rm -f tools_mac.zip
 (cd tools_mac && zip -q -r ../tools_mac.zip .)
 echo "ГОТОВО: tools_mac.zip ($(du -h tools_mac.zip | cut -f1))"
-EOF
+PREP_SCRIPT
           
-          chmod +x prep_tools_mac_simple.sh
-          ./prep_tools_mac_simple.sh
+          chmod +x prep_tools_simple.sh
+          ./prep_tools_simple.sh
 
       - name: Build .app (Nuitka)
         run: ./build_mac.sh
