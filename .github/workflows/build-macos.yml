@@ -16,7 +16,7 @@ jobs:
         include:
           - runner: macos-14
             arch: arm64
-          - runner: macos-13
+          - runner: macos-15-intel
             arch: x86_64
     runs-on: ${{ matrix.runner }}
 
@@ -38,60 +38,47 @@ jobs:
       - name: Download static ffmpeg/ffprobe
         run: |
           mkdir -p tools_mac
-          
-          # Статические билды ffmpeg с osxexperts.net (не линкуются с homebrew)
-          # Альтернатива — evermeet.cx, но часто отдаёт 404
-          if [ "${{ matrix.arch }}" = "arm64" ]; then
-            FFMPEG_URL="https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip"
-            FFPROBE_URL="https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip"
-          else
-            FFMPEG_URL="https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip"
-            FFPROBE_URL="https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip"
-          fi
-          
-          # -L = следовать за редиректами, -A = user-agent, -f = фейлиться на HTTP ошибках
-          curl -L -f --retry 5 --retry-delay 10 -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" \
-            -o ffmpeg.zip "$FFMPEG_URL"
-          curl -L -f --retry 5 --retry-delay 10 -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" \
-            -o ffprobe.zip "$FFPROBE_URL"
-          
+
+          # Статические билды с evermeet.cx (не линкуются с homebrew).
+          # Сборки x86_64; на arm64 работают через Rosetta.
+          FFMPEG_URL="https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip"
+          FFPROBE_URL="https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip"
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
+
+          curl -L -f --retry 5 --retry-delay 10 -A "$UA" -o ffmpeg.zip "$FFMPEG_URL"
+          curl -L -f --retry 5 --retry-delay 10 -A "$UA" -o ffprobe.zip "$FFPROBE_URL"
+
           unzip -o ffmpeg.zip -d tools_mac/
           unzip -o ffprobe.zip -d tools_mac/
           rm -f ffmpeg.zip ffprobe.zip
-          
+
           ls -lh tools_mac/
 
       - name: Download exiftool (full distribution with lib/)
         run: |
-          EXIFVER="13.00"
-          
-          # -L = следовать за редиректами (exiftool.org редиректит на CDN)
+          # Актуальная версия берётся с сайта автоматически
+          EXIFVER="$(curl -L -f -s https://exiftool.org/ver.txt | tr -d '[:space:]')"
+          echo "ExifTool version: ${EXIFVER}"
+
           curl -L -f --retry 5 --retry-delay 10 \
             -o exiftool.tar.gz "https://exiftool.org/Image-ExifTool-${EXIFVER}.tar.gz"
-          
+
           tar xzf exiftool.tar.gz
-          
-          # Копируем полный дистрибутив: exiftool (Perl-скрипт) + lib/ (модули)
+
           mkdir -p tools_mac/lib
-          cp "Image-ExifTool-${EXIFVER}/exiftool" tools_mac/exiftool
+          cp "Image-ExifTool-${EXIFVER}/exiftool" tools_mac/exiftool.pl
           cp -R "Image-ExifTool-${EXIFVER}/lib/"* tools_mac/lib/
-          
-          # Создаём wrapper чтобы exiftool нашёл свои модули
-          cat > tools_mac/exiftool <<'WRAPPER'
-#!/bin/bash
-DIR="$(cd "$(dirname "$0")" && pwd)"
-exec /usr/bin/perl -I "$DIR/lib" "$DIR/exiftool.pl" "$@"
-WRAPPER
-          mv tools_mac/exiftool tools_mac/exiftool.pl
-          cat > tools_mac/exiftool <<WRAPPER
-#!/bin/bash
-DIR="\$(cd "\$(dirname "\$0")" && pwd)"
-exec /usr/bin/perl -I "\$DIR/lib" "\$DIR/exiftool.pl" "\$@"
-WRAPPER
+
+          # Wrapper, чтобы exiftool нашёл свои модули (без heredoc)
+          printf '%s\n' \
+            '#!/bin/bash' \
+            'DIR="$(cd "$(dirname "$0")" && pwd)"' \
+            'exec /usr/bin/perl -I "$DIR/lib" "$DIR/exiftool.pl" "$@"' \
+            > tools_mac/exiftool
           chmod +x tools_mac/exiftool
-          
+
           rm -rf exiftool.tar.gz "Image-ExifTool-${EXIFVER}"
-          
+
           ls -lh tools_mac/
 
       - name: Prepare tools_mac.zip
