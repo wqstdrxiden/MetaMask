@@ -29,15 +29,29 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Download macOS tools
+      - name: Download macOS tools (ffmpeg / ffprobe / exiftool)
         run: |
           mkdir -p tools_mac
-          curl -fsSL -o ffmpeg.zip  "https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip"
-          curl -fsSL -o ffprobe.zip "https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip"
-          unzip -o ffmpeg.zip  -d tools_mac
+          
+          # Скачиваем ffmpeg и ffprobe с User-Agent (evermeet блокирует обычные curl)
+          curl -L --retry 3 --retry-delay 5 -A "Mozilla/5.0" \
+            -o ffmpeg.zip "https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip" || {
+            echo "evermeet.cx недоступен, используем альтернативный источник..."
+            curl -L --retry 3 -o ffmpeg.zip "https://www.osxexperts.net/ffmpeg7intel.zip"
+          }
+          
+          curl -L --retry 3 --retry-delay 5 -A "Mozilla/5.0" \
+            -o ffprobe.zip "https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip" || {
+            echo "evermeet.cx недоступен для ffprobe..."
+            curl -L --retry 3 -o ffprobe.zip "https://www.osxexperts.net/ffprobe7intel.zip"
+          }
+          
+          unzip -o ffmpeg.zip -d tools_mac
           unzip -o ffprobe.zip -d tools_mac
+          
+          # Скачиваем exiftool
           EXIFVER=13.00
-          curl -fsSL -o exiftool.tar.gz "https://exiftool.org/Image-ExifTool-${EXIFVER}.tar.gz"
+          curl -L --retry 3 -o exiftool.tar.gz "https://exiftool.org/Image-ExifTool-${EXIFVER}.tar.gz"
           tar xzf exiftool.tar.gz
           mv "Image-ExifTool-${EXIFVER}" exiftool_src
 
@@ -46,10 +60,10 @@ jobs:
           chmod +x prep_tools_mac.sh build_mac.sh
           ./prep_tools_mac.sh
 
-      - name: Build .app
+      - name: Build .app (Nuitka)
         run: ./build_mac.sh
 
-      - name: Pack
+      - name: Pack (ditto сохраняет codesign)
         run: |
           ditto -c -k --sequesterRsrc --keepParent \
             "dist/MetaMask US.app" \
