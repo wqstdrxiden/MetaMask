@@ -3,3 +3,4 @@
 *.py text eol=lf
 *.html text eol=lf
 *.yml text eol=lf
+prep_tools_simple.sh text eol=lf
