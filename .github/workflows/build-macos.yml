@@ -56,18 +56,21 @@ jobs:
 
       - name: Download exiftool (full distribution with lib/)
         run: |
-          # Актуальная версия берётся с сайта автоматически
-          EXIFVER="$(curl -L -f -s https://exiftool.org/ver.txt | tr -d '[:space:]')"
+          # Официальное GitHub-зеркало автора, теги = номера версий.
+          # Версия берётся с exiftool.org, при сбое используется запасная.
+          EXIFVER="$(curl -L -f -s https://exiftool.org/ver.txt | tr -d '[:space:]' || true)"
+          EXIFVER="${EXIFVER:-13.59}"
           echo "ExifTool version: ${EXIFVER}"
 
           curl -L -f --retry 5 --retry-delay 10 \
-            -o exiftool.tar.gz "https://exiftool.org/Image-ExifTool-${EXIFVER}.tar.gz"
+            -o exiftool.tar.gz "https://github.com/exiftool/exiftool/archive/refs/tags/${EXIFVER}.tar.gz"
 
-          tar xzf exiftool.tar.gz
+          mkdir exiftool_src
+          tar xzf exiftool.tar.gz -C exiftool_src --strip-components=1
 
           mkdir -p tools_mac/lib
-          cp "Image-ExifTool-${EXIFVER}/exiftool" tools_mac/exiftool.pl
-          cp -R "Image-ExifTool-${EXIFVER}/lib/"* tools_mac/lib/
+          cp exiftool_src/exiftool tools_mac/exiftool.pl
+          cp -R exiftool_src/lib/* tools_mac/lib/
 
           # Wrapper, чтобы exiftool нашёл свои модули (без heredoc)
           printf '%s\n' \
@@ -77,7 +80,7 @@ jobs:
             > tools_mac/exiftool
           chmod +x tools_mac/exiftool
 
-          rm -rf exiftool.tar.gz "Image-ExifTool-${EXIFVER}"
+          rm -rf exiftool.tar.gz exiftool_src
 
           ls -lh tools_mac/
 
