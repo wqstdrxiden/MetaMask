@@ -1,0 +1,69 @@
+name: build-macos
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            arch: arm64
+          - runner: macos-13
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download macOS tools
+        run: |
+          mkdir -p tools_mac
+          curl -fsSL -o ffmpeg.zip  "https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip"
+          curl -fsSL -o ffprobe.zip "https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip"
+          unzip -o ffmpeg.zip  -d tools_mac
+          unzip -o ffprobe.zip -d tools_mac
+          EXIFVER=13.00
+          curl -fsSL -o exiftool.tar.gz "https://exiftool.org/Image-ExifTool-${EXIFVER}.tar.gz"
+          tar xzf exiftool.tar.gz
+          mv "Image-ExifTool-${EXIFVER}" exiftool_src
+
+      - name: Prepare tools_mac.zip
+        run: |
+          chmod +x prep_tools_mac.sh build_mac.sh
+          ./prep_tools_mac.sh
+
+      - name: Build .app
+        run: ./build_mac.sh
+
+      - name: Pack
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            "dist/MetaMask US.app" \
+            "MetaMaskUS-macOS-${{ matrix.arch }}.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MetaMaskUS-macOS-${{ matrix.arch }}
+          path: MetaMaskUS-macOS-${{ matrix.arch }}.zip
+          retention-days: 30
+
+      - name: Publish Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: MetaMaskUS-macOS-${{ matrix.arch }}.zip

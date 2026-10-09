@@ -1,0 +1,12 @@
+venv/
+venv_mac/
+dist/
+main.build/
+main.onefile-build/
+tools/
+tools_mac/
+tools.zip
+tools_mac.zip
+exiftool_src/
+*.log
+.DS_Store

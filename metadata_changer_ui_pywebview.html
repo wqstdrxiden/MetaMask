@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MetaMask US</title>
+<style>
+/* ── Шрифт Geometria ─────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Geometria';
+  src: url('geometria-light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geometria';
+  src: url('geometria-medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geometria';
+  src: url('geometria-bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geometria';
+  src: url('geometria-extrabold.woff') format('woff');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geometria';
+  src: url('geometria-lightitalic.woff') format('woff');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geometria';
+  src: url('geometria-mediumitalic.woff') format('woff');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geometria';
+  src: url('geometria-bolditalic.woff') format('woff');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ── Палитра: меняй только эти переменные ───────────────────────────── */
+:root{
+  --bg:#F4F5F8; --surface:#FFFFFF; --accent:#6C63FF; --acch:#5A52E0;
+  --tint:#EEEDFE; --hover:#F1F0FF; --on:#FFFFFF;
+  --t1:#1F2430; --t2:#4B5563; --t3:#6B7280;
+  --border:#E5E7EB; --dash:#C4C9D4;
+  --ok:#34C759; --okTxt:#1E8E3E; --err:#FF3B30; --errTxt:#D92D20; --errBg:#FFF1F0;
+  --shadow:0 1px 2px rgba(16,24,40,.04),0 10px 30px rgba(16,24,40,.06);
+}
+/* Remove Metadata: тёмная тема (как было изначально) */
+html[data-mode='clean']{
+  --bg:#0E1016; --surface:#161922; --accent:#8B85FF; --acch:#A29DFF;
+  --tint:#262A45; --hover:#1D2030; --on:#12131A;
+  --t1:#ECEEF4; --t2:#A7ADBD; --t3:#8189A0;
+  --border:#262B38; --dash:#3A4152;
+  --ok:#4ADE80; --okTxt:#4ADE80; --err:#FCA5A5; --errTxt:#FCA5A5; --errBg:#2A1A1D;
+  --shadow:none;
+}
+
+/* Единый переход темы: действует только ~300мс во время переключения */
+html.theming *,
+html.theming *::before,
+html.theming *::after{
+  transition:
+    background-color .25s ease,
+    border-color .25s ease,
+    color .25s ease,
+    fill .25s ease,
+    stroke .25s ease,
+    box-shadow .25s ease !important;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--t1);font:14px/1.4 "Geometria","Segoe UI",system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+button{font:inherit;cursor:pointer;outline:none}
+button:focus-visible,.modes button:focus-visible{box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);transition:box-shadow .15s ease}
+
+.app{max-width:680px;height:100%;margin:0 auto;padding:22px 24px;display:flex;flex-direction:column;gap:14px}
+
+/* ── Переключатель режимов ── */
+.modes{display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content}
+.modes button{height:34px;padding:0 16px;border:0;border-radius:9px;background:transparent;color:var(--t2);font-weight:600;font-size:13px;transition:.15s}
+.modes button.on{background:var(--accent);color:var(--on)}
+.modes button:not(.on):hover{background:var(--bg)}
+
+/* ── Зона загрузки ── */
+.zone{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  background:var(--surface);border:1.5px solid var(--dash);border-radius:20px;padding:24px;
+  transition:border-color .18s,background .18s,transform .18s,padding .25s}
+.zic{width:72px;height:72px;border-radius:50%;background:var(--tint);color:var(--accent);display:grid;place-items:center;margin-bottom:14px;transition:.18s}
+.zic svg{width:30px;height:30px;stroke-width:2.2}
+.zic .dn{display:none}
+.zt{font-size:17px;font-weight:650;margin:0}
+.zs{font-size:13px;color:var(--t2);margin:4px 0 18px}
+.zone .over-t,.zone .over-s{display:none}
+.pbtn{height:40px;padding:0 20px;border:0;border-radius:10px;background:var(--accent);color:var(--on);font-weight:600;transition:background .15s,transform .1s}
+.pbtn:hover{background:var(--acch)} .pbtn:active{transform:scale(.97)}
+
+.zone.compact{flex:none;flex-direction:row;text-align:left;gap:14px;padding:12px 16px}
+.zone.compact .zic{width:44px;height:44px;margin:0}
+.zone.compact .zic svg{width:22px;height:22px}
+.zone.compact .txt{flex:1;min-width:0}
+.zone.compact .zt{font-size:14px}
+.zone.compact .zs{margin:0;font-size:12px}
+.zone.compact .pbtn{height:34px;padding:0 16px;font-size:13px}
+
+.zone.over{border:2px solid var(--accent);background:var(--hover);transform:scale(1.005)}
+.zone.over .zic{background:var(--accent);color:var(--on)}
+.zone.over .up{display:none} .zone.over .dn{display:block}
+.zone.over .idle-t,.zone.over .idle-s{display:none}
+.zone.over .over-t,.zone.over .over-s{display:inline}
+
+/* ── Очередь ── */
+.queue{flex:1;min-height:0;display:flex;flex-direction:column}
+.queue[hidden]{display:none}
+.qh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.qh b{font-size:13px;font-weight:650} .qh span{font-size:12px;color:var(--t2)}
+.tr{height:4px;border-radius:2px;background:var(--border);overflow:hidden}
+.tr i{display:block;height:100%;width:0;background:var(--accent);border-radius:2px;transition:width .25s ease}
+.list{flex:1;min-height:0;overflow:auto;margin-top:10px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+.row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border);animation:in .28s ease both;transition:background .2s}
+.row:last-child{border-bottom:0}
+@keyframes in{from{opacity:0;transform:translateY(6px)}}
+.ic{width:36px;height:36px;border-radius:10px;background:var(--bg);color:var(--t2);display:grid;place-items:center;flex:none}
+.mid{flex:1;min-width:0}
+.n{margin:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s{margin:0;font-size:12px;color:var(--t2)}
+.mid .tr{margin-top:7px;display:none}
+.row[data-state=processing] .mid .tr{display:block}
+.st{display:flex;align-items:center;gap:5px;font-size:12px;flex:none;color:var(--t2)}
+.st svg{width:16px;height:16px}
+.ok{color:var(--okTxt);display:flex;align-items:center;gap:4px} .ok svg{color:var(--ok)} .mut{color:var(--t3)}
+.modetag{font-size:11px;font-weight:600;color:var(--t2);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px 7px}
+.row[data-state=error]{background:var(--errBg)}
+.row[data-state=error] .ic{background:transparent;color:var(--err)}
+.row[data-state=error] .s{color:var(--errTxt)}
+.spin{animation:rot .9s linear infinite} @keyframes rot{to{transform:rotate(360deg)}}
+.sb{height:28px;padding:0 11px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--t1);font-size:12px;display:flex;align-items:center;gap:5px;transition:background .15s}
+.sb:hover{background:var(--bg)} .sb svg{width:14px;height:14px}
+
+.foot{display:flex;justify-content:space-between;margin-top:12px}
+.btn{height:34px;padding:0 14px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--t1);font-size:13px;display:flex;align-items:center;gap:7px;transition:background .15s}
+.btn:hover{background:var(--surface)} .btn.ghost{border-color:transparent;color:var(--t2)} .btn svg{width:16px;height:16px}
+
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--t1);color:var(--bg);padding:9px 14px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="upload" viewBox="0 0 24 24"><path d="M12 16V5M7.5 9.5 12 5l4.5 4.5M5 15v2.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V15"/></symbol>
+  <symbol id="down" viewBox="0 0 24 24"><path d="M12 5v11M7.5 11.5 12 16l4.5-4.5"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 9.5 17 19 7.5"/></symbol>
+  <symbol id="alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5M12 16.2h.01"/></symbol>
+  <symbol id="video" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3.5"/><path d="M10.5 9.5v5l4-2.5z" fill="currentColor"/></symbol>
+  <symbol id="image" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="3.5"/><path d="m3.5 16 5-5 4 4 3-3 5 5"/><circle cx="15.5" cy="9" r="1.2"/></symbol>
+  <symbol id="folder" viewBox="0 0 24 24"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/></symbol>
+</svg>
+
+<main class="app">
+  <div class="modes" role="tablist" aria-label="Режим обработки">
+    <button id="modeChange" role="tab" aria-selected="true">Change Metadata</button>
+    <button id="modeClean" role="tab" aria-selected="false">Remove Metadata</button>
+  </div>
+
+  <section class="zone" id="zone">
+    <div class="zic"><svg class="up"><use href="#upload"/></svg><svg class="dn"><use href="#down"/></svg></div>
+    <div class="txt">
+      <p class="zt"><span class="idle-t">Drag &amp; drop files here</span><span class="over-t">Drop to add</span></p>
+      <p class="zs"><span class="idle-s" id="idleSub">Video and photos, multiple at once</span><span class="over-s">Files will be added to the queue</span></p>
+    </div>
+    <button class="pbtn" id="pick">Choose files</button>
+    <input type="file" id="file" multiple hidden accept=".mp4,.mov,.avi,.mkv,.jpg,.jpeg,.jfif,.png,.heic,.heif,.tif,.tiff,.webp">
+  </section>
+
+  <section class="queue" id="queue" hidden>
+    <div class="qh"><b id="qTitle"></b><span id="qStat"></span></div>
+    <div class="tr"><i id="total"></i></div>
+    <div class="list" id="list"></div>
+    <div class="foot">
+      <button class="btn" id="openDir"><svg><use href="#folder"/></svg>Open folder</button>
+      <button class="btn ghost" id="clear">Clear completed</button>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══ Адаптер бэкенда (pywebview) ══════════════════════════════════════
+   Контракт с Python (js_api):
+     pick_files()                  -> [{name, size, path}, ...]
+     process_file(id, path, mode)  -> {"ok": true} | {"ok": false, "error": "..."}
+                                      mode: 'change' | 'clean'  (clean = Remove Metadata)
+                                      прогресс: window.__progress(id, percent)
+     reveal(path)                  -> открыть папку с выделенным файлом
+   Drag&drop: файлы без пути пропускаются — Python сам пришлёт их
+   через window.__addFiles([...]) с реальными путями. */
+const hasPy = () => !!(window.pywebview && window.pywebview.api);
+const progressCbs = {};
+window.__progress = (id, v) => { if (progressCbs[id]) progressCbs[id](v); };
+window.__addFiles = list => add(list);
+
+const demo = {
+  process(item, onProgress) {
+    return new Promise(resolve => {
+      let p = 0;
+      const t = setInterval(() => {
+        p += 2 + Math.random() * 5;
+        if (p >= 100) { clearInterval(t); onProgress(100); resolve(); }
+        else onProgress(p);
+      }, 90);
+    });
+  }
+};
+
+const backend = {
+  process(item, onProgress) {
+    if (!hasPy()) return demo.process(item, onProgress);
+    progressCbs[item.id] = onProgress;
+    return window.pywebview.api.process_file(item.id, item.path, item.mode)
+      .then(r => { if (r && r.ok === false) throw new Error(r.error || 'Ошибка обработки'); })
+      .finally(() => { delete progressCbs[item.id]; });
+  },
+  reveal(item) {
+    if (hasPy()) window.pywebview.api.reveal(item.path);
+    else toast('Folder cannot be opened in demo mode');
+  },
+  async pick() {
+    if (!hasPy()) return $('file').click();
+    const list = await window.pywebview.api.pick_files();
+    if (list && list.length) add(list);
+  }
+};
+
+/* ═══ Логика интерфейса ═════════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+const VIDEO = ['mp4','mov','avi','mkv'];
+const SUPPORTED = [...VIDEO,'jpg','jpeg','png','heic','heif','tif','tiff','webp','jfif'];
+let items = [], busy = false, seq = 0;
+let mode = localStorage.getItem('mc_mode') || 'change';   // 'change' | 'clean'
+
+let themeTimer;
+function setMode(m, animate = true) {
+  const root = document.documentElement;
+  if (animate) {
+    root.classList.add('theming');
+    clearTimeout(themeTimer);
+    themeTimer = setTimeout(() => root.classList.remove('theming'), 320);
+  }
+  mode = m;
+  root.dataset.mode = m;                                  // 'clean' -> тёмная тема
+  $('modeChange').classList.toggle('on', m === 'change');
+  $('modeClean').classList.toggle('on', m === 'clean');
+  $('modeChange').setAttribute('aria-selected', m === 'change');
+  $('modeClean').setAttribute('aria-selected', m === 'clean');
+  try { localStorage.setItem('mc_mode', m); } catch (e) {}
+}
+$('modeChange').onclick = () => setMode('change');
+$('modeClean').onclick = () => setMode('clean');
+setMode(mode, false);                                     // при загрузке без анимации
+
+const ext = n => { const i = n.lastIndexOf('.'); return i < 0 ? '' : n.slice(i + 1).toLowerCase(); };
+const icon = (id, cls = '') => `<svg class="${cls}"><use href="#${id}"/></svg>`;
+const spinner = () => `<svg class="spin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" opacity=".25"/><path d="M12 3a9 9 0 0 1 9 9"/></svg>`;
+const plural = (n, one, many) => (n === 1 ? one : many);
+const fmt = n => { const u = ['B','KB','MB','GB']; let i = 0; while (n >= 1024 && i < 3) { n /= 1024; i++; } return (i ? n.toFixed(1) : n) + ' ' + u[i]; };
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2200); }
+
+function validate(name) {
+  const e = ext(name);
+  if (!SUPPORTED.includes(e)) return `Unsupported format ${e ? '.' + e : '(no extension)'}.`;
+  const bad = [...new Set(name.match(/[\\/:*?"<>|]/g) || [])];
+  return bad.length ? `Invalid characters in filename: ${bad.join(' ')}. Rename the file.` : '';
+}
+
+function add(files) {
+  let missing = [];
+  for (const f of files) {
+    const path = f.path || f.pywebviewFullPath || (hasPy() ? '' : f.name);
+    // Нет пути (браузерный drop внутри pywebview): строку не создаём,
+    // Python сам пришлёт файл с реальным путём через __addFiles.
+    if (!path) { missing.push(f.name); continue; }
+    if (items.some(i => i.path === path && i.bytes === f.size)) continue;
+    const it = { id: ++seq, name: f.name, bytes: f.size, path, mode, state: 'waiting', p: 0, err: '' };
+    const e = validate(f.name);
+    if (e) { it.state = 'error'; it.err = e; }
+    it.el = document.createElement('div');
+    it.el.className = 'row';
+    it.el.dataset.id = it.id;
+    $('list').appendChild(it.el);
+    items.push(it);
+    paint(it);
+  }
+  refresh(); pump();
+  if (missing.length) {
+    const names = missing;
+    setTimeout(() => {
+      // Тост только если файл ДЕЙСТВИТЕЛЬНО не появился в очереди.
+      // Дубликат (уже есть строка с таким именем) = файл "в очереди" = не ошибка.
+      const unresolved = names.filter(n => !items.some(i => i.name === n));
+      if (unresolved.length) toast('File not added. If it is missing from the queue, pick it with the button.');
+    }, 1000);
+  }
+}
+
+function paint(it) {
+  const k = VIDEO.includes(ext(it.name)) ? 'video' : 'image';
+  const size = it.bytes ? fmt(it.bytes) : '';
+  let ic = k, sub = size, st = '', act = '';
+  if (it.state === 'waiting') { st = '<span class="mut">Waiting</span>'; act = '<button class="sb" data-act="remove">Remove</button>'; }
+  if (it.state === 'processing') { sub = (size + ' · applying metadata').replace(/^ · /, ''); st = `<span class="st">${spinner()}<span class="pct">0%</span></span>`; }
+  if (it.state === 'done') {
+    const tag = it.mode === 'change' ? 'Changed' : 'Removed';
+    st = `<span class="modetag">${tag}</span><span class="ok">${icon('check')}Done</span>`;
+    act = `<button class="sb" data-act="reveal">${icon('folder')}Show in folder</button>`;
+  }
+  if (it.state === 'error') { ic = 'alert'; sub = it.err; act = '<button class="sb" data-act="remove">Remove</button>'; }
+  it.el.dataset.state = it.state;
+  it.el.innerHTML = `<div class="ic">${icon(ic)}</div>
+    <div class="mid"><p class="n" title="${esc(it.name)}">${esc(it.name)}</p><p class="s">${esc(sub)}</p><div class="tr"><i style="width:${it.p}%"></i></div></div>
+    ${st}${act}`;
+}
+
+async function pump() {
+  if (busy) return;
+  const it = items.find(i => i.state === 'waiting');
+  if (!it) return;
+  busy = true; it.state = 'processing'; it.p = 0; paint(it); refresh();
+  try {
+    await backend.process(it, v => {
+      it.p = v;
+      const bar = it.el.querySelector('.tr i'), pct = it.el.querySelector('.pct');
+      if (bar) bar.style.width = v + '%';
+      if (pct) pct.textContent = Math.round(v) + '%';
+      refresh();
+    });
+    it.state = 'done'; it.p = 100;
+  } catch (e) { it.state = 'error'; it.err = e.message || String(e); }
+  busy = false; paint(it); refresh(); pump();
+}
+
+function refresh() {
+  const n = items.length;
+  $('zone').classList.toggle('compact', n > 0);
+  $('idleSub').textContent = n ? 'or choose manually' : 'Video and photos, multiple at once';
+  $('queue').hidden = !n;
+  if (!n) return;
+  const done = items.filter(i => i.state === 'done').length;
+  const errs = items.filter(i => i.state === 'error').length;
+  const part = items.filter(i => i.state === 'processing').reduce((s, i) => s + i.p / 100, 0);
+  $('qTitle').textContent = `Queue · ${n} ${plural(n, 'file', 'files')}`;
+  $('qStat').textContent = `Done ${done} of ${n}` + (errs ? ` · errors: ${errs}` : '');
+  $('total').style.width = Math.min(100, (done + errs + part) / n * 100) + '%';
+}
+
+/* ── события ── */
+$('list').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const it = items.find(i => i.id == b.closest('.row').dataset.id);
+  if (b.dataset.act === 'reveal') backend.reveal(it);
+  if (b.dataset.act === 'remove' && it.state !== 'processing') { it.el.remove(); items = items.filter(i => i !== it); refresh(); }
+});
+$('clear').onclick = () => { items.filter(i => i.state === 'done').forEach(i => i.el.remove()); items = items.filter(i => i.state !== 'done'); refresh(); };
+$('openDir').onclick = () => { const it = [...items].reverse().find(i => i.state === 'done') || items[items.length - 1]; if (it) backend.reveal(it); };
+$('pick').onclick = () => backend.pick();
+$('file').onchange = e => { add([...e.target.files]); e.target.value = ''; };
+
+let depth = 0;
+addEventListener('dragenter', e => { e.preventDefault(); depth++; $('zone').classList.add('over'); });
+addEventListener('dragover', e => e.preventDefault());
+addEventListener('dragleave', () => { if (--depth <= 0) { depth = 0; $('zone').classList.remove('over'); } });
+addEventListener('drop', e => { e.preventDefault(); depth = 0; $('zone').classList.remove('over'); add([...e.dataTransfer.files]); });
+</script>
+</body>
+</html>
